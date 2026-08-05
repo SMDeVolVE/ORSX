@@ -1,0 +1,35 @@
+name: Estrai tabelle imposta alla fonte TI
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  estrai:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Installa dipendenze
+        run: pip install pdfplumber requests
+
+      - name: Scarica PDF ed estrai tabelle
+        run: python frontalieri/scripts/estrai_tabelle.py
+
+      - name: Commit del JSON generato
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add frontalieri/data/aliquote-ti-2026-completo.json
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da committare"
+          else
+            git commit -m "Tabelle TI 2026 complete (A-U, 0-9 figli) estratte via GitHub Actions"
+            git push
+          fi
