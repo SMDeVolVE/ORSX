@@ -73,13 +73,19 @@ export function irpef(imponibile) {
 
 // Contributi sociali CH quota dipendente sul lordo annuo.
 // bandaLpp: indice in LPP_BANDS (fascia d'età).
-export function contributiSociali(lordoAnnuo, bandaLpp) {
+// opts (tutti opzionali, per aderire alla busta paga reale):
+//   tassoAinp  — LAINF non professionale + complementare (default 1%; tipico ~1,01%)
+//   lppAnnuo   — importo LPP annuo reale (sostituisce la stima per fascia d'età)
+//   altrePct   — altre trattenute percentuali aziendali/CCL (es. IGM malattia + CCL)
+export function contributiSociali(lordoAnnuo, bandaLpp, opts = {}) {
+  const { tassoAinp = SOCIALI.ainp, lppAnnuo = null, altrePct = 0 } = opts;
   const avs = lordoAnnuo * SOCIALI.avs;
   const ad = Math.min(lordoAnnuo, SOCIALI.adCap) * SOCIALI.ad;
-  const ainp = lordoAnnuo * SOCIALI.ainp;
+  const ainp = lordoAnnuo * tassoAinp;
   const coordinato = Math.min(Math.max(lordoAnnuo - LPP.coord, LPP.minCoord), LPP.maxCoord);
-  const lpp = (coordinato * LPP_BANDS[bandaLpp].rate) / 2;
-  return { avs, ad, ainp, lpp, totale: avs + ad + ainp + lpp };
+  const lpp = lppAnnuo ?? (coordinato * LPP_BANDS[bandaLpp].rate) / 2;
+  const altre = lordoAnnuo * altrePct;
+  return { avs, ad, ainp, lpp, altre, totale: avs + ad + ainp + lpp + altre };
 }
 
 /**
@@ -95,11 +101,19 @@ export function contributiSociali(lordoAnnuo, bandaLpp) {
  * @param {object} [p.dati]        JSON completo { A: {"0": [...], ...}, ... } — abilita famiglia/figli
  * @param {string} [p.famiglia]    celibe | coniugato_unico | coniugato_doppio | monoparentale
  * @param {number} [p.figli]       0–9 figli a carico
+ * @param {number} [p.tassoAinp]   LAINF NP + complementare (default 1%)
+ * @param {number} [p.altrePct]    altre trattenute % aziendali/CCL (IGM, CCL, ...)
+ * @param {number} [p.lppMensile]  LPP mensile reale da busta paga (12 prelievi/anno;
+ *                                 di norma la tredicesima non è soggetta a LPP)
  */
-export function calcolaNetto({ lordoMensile, mensilita, bandaLpp, regime, cambio, tabelle, dati, famiglia = "celibe", figli = 0 }) {
+export function calcolaNetto({ lordoMensile, mensilita, bandaLpp, regime, cambio, tabelle, dati, famiglia = "celibe", figli = 0, tassoAinp, altrePct, lppMensile }) {
   const lordoAnnuo = lordoMensile * mensilita;
 
-  const sociali = contributiSociali(lordoAnnuo, bandaLpp);
+  const sociali = contributiSociali(lordoAnnuo, bandaLpp, {
+    ...(tassoAinp !== undefined && { tassoAinp }),
+    ...(altrePct !== undefined && { altrePct }),
+    ...(lppMensile !== undefined && lppMensile !== null && { lppAnnuo: lppMensile * 12 }),
+  });
 
   let tabella, lettera;
   if (dati) {

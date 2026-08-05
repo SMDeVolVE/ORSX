@@ -117,12 +117,32 @@ Lato Italia (solo nuovi frontalieri):
 - Saldo Italia = max(IRPEF+add − credito, 0)
 - Detrazioni IRPEF personali NON incluse (semplificazione dichiarata)
 
+## Validazione con busta paga reale (2026-08, tariffa T0N) — FATTA
+
+Il motore riproduce una busta paga TI reale (coniugato doppio reddito, nuovo
+frontaliere, conguaglio mensile) con scarto di 3 centesimi sul netto (solo
+arrotondamenti svizzeri ai 5 cent). Riscontri chiave (importi personali NON nel
+repo; test sui meccanismi in `engine/busta-paga.test.mjs`):
+- Aliquota fonte: il datore fa il lookup sul salario ×12 nel conguaglio mensile
+  (tabella T0 → riscontrata identica alla nostra estrazione); con la tredicesima
+  il conguaglio di fine anno porta l'aliquota della fascia ×13 → nell'app va
+  spiegato che a dicembre la trattenuta sale.
+- AVS 5,30% e AD 1,10% esatti. LAINF reale = NP 0,89% + complementare 0,122%
+  ≈ 1,01% → il default 1% del motore è ottimo, ora è configurabile (`tassoAinp`).
+- LPP in busta è un importo FISSO mensile (12 prelievi, tredicesima esente) —
+  nuovo parametro `lppMensile` che sostituisce la stima per fascia d'età.
+- Esistono trattenute aziendali/CCL fuori dal modello base: IGM malattia
+  (~0,77%) e contributo CCL (0,40%) → nuovo parametro `altrePct`.
+- Le spese/rimborsi in busta NON sono soggetti a contributi né a fonte: la UI
+  deve chiedere il salario soggetto, non il totale lordo del cedolino.
+
 ## Prossimi passi tecnici
 
-1. Validare il motore con buste paga reali (Ste può farlo direttamente —
-   confrontare con i test in `engine/motore.test.mjs` e aggiungere i casi reali)
+1. Aggiungere altri casi reali di validazione (altre tariffe/anni, buste paga
+   di colleghi frontalieri disponibili)
 2. Aggiornare il prototipo JSX con selettore famiglia + figli (il motore è
-   pronto; manca solo la UI)
+   pronto; manca solo la UI) + campi opzionali "da busta paga" (LPP fisso,
+   IGM/CCL, salario soggetto vs spese)
 3. Modellare le detrazioni familiari IRPEF italiane (carichi di famiglia) —
    senza, il vantaggio figli non si vede per i nuovi frontalieri
 4. Integrare `engine/cambio.mjs` nel prototipo (tasso live) + notifiche push
