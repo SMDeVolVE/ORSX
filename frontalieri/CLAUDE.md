@@ -173,6 +173,12 @@ un NOSTRO errore poi corretto: il 2° scaglione IRPEF 2026 è al 33%, non 35%
    di colleghi frontalieri disponibili)
 3. Feature da pareggiare: addizionali comunali per comune di residenza (dataset
    ~100 comuni), comparatore LAMal/SSN, assegni familiari
+3b. Campo "altri redditi italiani" (NASPI, secondi lavori, affitti): si sommano
+   al reddito complessivo SENZA franchigia e possono avere marginali effettivi
+   >50% nella zona 32-40k (IRPEF 33% + erosione simultanea di art.13 e
+   ulteriore detrazione). Caso reale: 2 mesi di NASPI = ~1'800 EUR di imposte
+   in piu'. Anche: anni parziali (aliquota fonte annualizzata sui mesi
+   lavorati, non sul totale anno)
 4. Scelta stack definitiva (il motore JS puro spinge verso React Native/Expo)
    e repo dedicato; integrare `cambio.mjs` con tasso live + alert push
 3. Modellare le detrazioni familiari IRPEF italiane (carichi di famiglia) —
