@@ -40,16 +40,20 @@ tutto il lavoro fatto per continuare lo sviluppo in Claude Code.
 frontalieri/
 ├── CLAUDE.md                     questo file
 ├── data/
-│   └── aliquote-ti-2026.json     tabelle A e R ufficiali TI 2026 (celibe, 0 figli)
+│   ├── aliquote-ti-2026.json     tabelle A e R (trascrizione manuale, celibe 0 figli)
+│   └── aliquote-ti-2026-completo.json   TUTTE le 8 tabelle, 0-9 figli, fino a 1.2M CHF
 ├── engine/
 │   ├── motore.mjs                motore di calcolo condiviso (zero dipendenze UI)
-│   ├── motore.test.mjs           11 test — eseguire: node --test engine/motore.test.mjs
+│   ├── motore.test.mjs           test del motore (11)
+│   ├── tabelle-complete.test.mjs test del JSON completo (9)
 │   └── cambio.mjs                fetch tasso CHF→EUR live (frankfurter + fallback)
 ├── prototipo/
 │   └── calcolatore-netto-frontaliere.jsx   prototipo React v2 "cascata trattenute"
 └── scripts/
-    └── estrai_tabelle.py         PDF ti.ch → JSON per tutte le tabelle A/B/C/H/R/S/T/U
+    └── estrai_tabelle.py         PDF ti.ch → JSON (già eseguito; i PDF restano fuori dal repo)
 ```
+
+Test: `node --test engine/motore.test.mjs engine/tabelle-complete.test.mjs` (20, tutti verdi)
 
 NOTA: il repo ORSX contiene anche `app.py` (Gestione Commesse, tool Evolve) —
 i due progetti convivono ma NON condividono codice; valutare un repo dedicato
@@ -63,17 +67,28 @@ quando si sceglie lo stack definitivo.
   netto EUR. Font: Space Grotesk (numeri) + Inter. Palette: ink navy #16233A,
   rosso CH #C22F2F, blu EU #1B4FA0, verde netto #1E7F4F.
 - La logica di calcolo è stata ESTRATTA in `engine/motore.mjs` (framework-agnostic,
-  riutilizzabile in React Native/Expo) e coperta da 11 test che passano, inclusi:
-  soglie tabelle, verifica R ≈ A×0,8, monotonia aliquote, scaglioni IRPEF, clamp
-  LPP, due casi completi end-to-end e l'invariante "vecchio regime ≥ nuovo".
+  riutilizzabile in React Native/Expo) e coperta da 20 test che passano.
   Il prototipo JSX resta standalone (per Claude artifacts); il motore è la fonte
   di verità per l'app.
-- `scripts/estrai_tabelle.py` è pronto ma NON ancora eseguito: l'ambiente Claude
-  Code remoto non raggiunge www4.ti.ch (policy di rete). Va lanciato in locale:
-  `pip install pdfplumber requests && python scripts/estrai_tabelle.py`.
-  Estrae tutte le 8 tabelle (0–9 figli), compatta le fasce e auto-verifica A/R
-  contro la trascrizione manuale. Il parser va controllato a campione alla prima
-  esecuzione (layout PDF non testato).
+- TUTTE le 8 tabelle 2026 (A/B/C/H vecchi, R/S/T/U nuovi; 0–9 figli) sono state
+  estratte dai PDF ufficiali in `data/aliquote-ti-2026-completo.json` con
+  `scripts/estrai_tabelle.py` (la rete dell'ambiente è stata sbloccata su
+  www4.ti.ch). Verifiche fatte: A0/R0 identiche alla trascrizione manuale su
+  19'801–199'800; riduzione 80% confermata su tutte e 4 le coppie (scarto max
+  0,08 punti); più figli → aliquota mai più alta; H/U partono da 1 figlio.
+  Le tabelle ufficiali arrivano a CHF 1'200'000 (A0 max 31,7%) — la trascrizione
+  manuale era troncata a ~200'000.
+  NOTA: 4 refusi nella fonte stessa (dip isolati di 0,1 punti in B1/C1/S1/T1
+  attorno a 1,12–1,17M CHF) — lasciati fedeli al PDF.
+- `motore.mjs` supporta ora famiglia + figli: `calcolaNetto({..., dati, famiglia,
+  figli})` con famiglia ∈ {celibe, coniugato_unico, coniugato_doppio,
+  monoparentale}; `scegliTabella()` mappa regime+famiglia → lettera tabella.
+  Il percorso legacy `tabelle:{A,R}` resta compatibile.
+  Insight fiscale emerso dai test: per i NUOVI frontalieri il vantaggio famiglia
+  sull'imposta alla fonte è assorbito dal saldo IRPEF (meno fonte = meno credito
+  d'imposta); il beneficio pieno si vede solo per i vecchi frontalieri. Le
+  detrazioni familiari ITALIANE non sono ancora modellate — quando lo saranno,
+  il vantaggio tornerà visibile anche per i nuovi.
 
 ### Logica di calcolo implementata (in `engine/motore.mjs`)
 
@@ -101,11 +116,10 @@ Lato Italia (solo nuovi frontalieri):
 
 1. Validare il motore con buste paga reali (Ste può farlo direttamente —
    confrontare con i test in `engine/motore.test.mjs` e aggiungere i casi reali)
-2. Eseguire IN LOCALE `scripts/estrai_tabelle.py` per generare
-   `data/aliquote-ti-2026-completo.json` con tutte le tabelle B/C/H/S/T/U
-   (coniugati/figli) e verificare l'output a campione contro i PDF
-3. Estendere `motore.mjs` con selettore situazione familiare + numero figli
-   usando il JSON completo
+2. Aggiornare il prototipo JSX con selettore famiglia + figli (il motore è
+   pronto; manca solo la UI)
+3. Modellare le detrazioni familiari IRPEF italiane (carichi di famiglia) —
+   senza, il vantaggio figli non si vede per i nuovi frontalieri
 4. Integrare `engine/cambio.mjs` nel prototipo (tasso live) + notifiche push
    per gli alert
 5. Scelta stack definitiva (Flutter vs React Native vs Expo) e repo dedicato

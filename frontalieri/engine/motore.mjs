@@ -38,6 +38,26 @@ export function lookupRate(table, income) {
   return table[table.length - 1][1];
 }
 
+// Mappa situazione familiare → lettera tabella TI (vecchi/nuovi frontalieri).
+// H/U (monoparentali) esistono solo da 1 figlio in su.
+export const TABELLE_FAMIGLIA = {
+  vecchio: { celibe: "A", coniugato_unico: "B", coniugato_doppio: "C", monoparentale: "H" },
+  nuovo: { celibe: "R", coniugato_unico: "S", coniugato_doppio: "T", monoparentale: "U" },
+};
+
+/**
+ * Seleziona la serie di aliquote dal JSON completo (aliquote-ti-2026-completo.json,
+ * formato { A: { "0": [[max,%],...], ... }, ... }).
+ * @returns {{ lettera: string, figli: number, tabella: number[][] }}
+ */
+export function scegliTabella(dati, { regime, famiglia = "celibe", figli = 0 }) {
+  const lettera = TABELLE_FAMIGLIA[regime]?.[famiglia];
+  if (!lettera || !dati[lettera]) throw new Error(`Tabella non trovata per ${regime}/${famiglia}`);
+  const minFigli = famiglia === "monoparentale" ? 1 : 0;
+  const f = Math.min(Math.max(figli, minFigli), 9);
+  return { lettera, figli: f, tabella: dati[lettera][String(f)] };
+}
+
 // IRPEF a scaglioni sull'imponibile in EUR (senza detrazioni personali).
 export function irpef(imponibile) {
   if (imponibile <= 0) return 0;
@@ -69,16 +89,26 @@ export function contributiSociali(lordoAnnuo, bandaLpp) {
  * @param {number} p.lordoMensile  lordo mensile CHF
  * @param {number} p.mensilita     12 o 13
  * @param {number} p.bandaLpp      indice fascia d'età in LPP_BANDS
- * @param {"nuovo"|"vecchio"} p.regime  nuovo = tabella R + conguaglio Italia
+ * @param {"nuovo"|"vecchio"} p.regime  nuovo = tabelle R/S/T/U + conguaglio Italia
  * @param {number} p.cambio        CHF→EUR
- * @param {object} p.tabelle       { A: [[max,%],...], R: [[max,%],...] }
+ * @param {object} [p.tabelle]     legacy: { A: [[max,%],...], R: [[max,%],...] } (solo celibe)
+ * @param {object} [p.dati]        JSON completo { A: {"0": [...], ...}, ... } — abilita famiglia/figli
+ * @param {string} [p.famiglia]    celibe | coniugato_unico | coniugato_doppio | monoparentale
+ * @param {number} [p.figli]       0–9 figli a carico
  */
-export function calcolaNetto({ lordoMensile, mensilita, bandaLpp, regime, cambio, tabelle }) {
+export function calcolaNetto({ lordoMensile, mensilita, bandaLpp, regime, cambio, tabelle, dati, famiglia = "celibe", figli = 0 }) {
   const lordoAnnuo = lordoMensile * mensilita;
 
   const sociali = contributiSociali(lordoAnnuo, bandaLpp);
 
-  const aliquota = lookupRate(regime === "nuovo" ? tabelle.R : tabelle.A, lordoAnnuo);
+  let tabella, lettera;
+  if (dati) {
+    ({ tabella, lettera } = scegliTabella(dati, { regime, famiglia, figli }));
+  } else {
+    tabella = regime === "nuovo" ? tabelle.R : tabelle.A;
+    lettera = regime === "nuovo" ? "R" : "A";
+  }
+  const aliquota = lookupRate(tabella, lordoAnnuo);
   const fonte = lordoAnnuo * (aliquota / 100);
 
   let saldoItaliaEur = 0, imponibileItEur = 0, irpefLordaEur = 0, creditoEur = 0;
@@ -95,7 +125,7 @@ export function calcolaNetto({ lordoMensile, mensilita, bandaLpp, regime, cambio
     lordoAnnuo,
     ...sociali,
     sociali: sociali.totale,
-    aliquota, fonte,
+    lettera, aliquota, fonte,
     imponibileItEur, irpefLordaEur, creditoEur, saldoItaliaEur,
     nettoAnnuoChf,
     nettoMensileChf: nettoAnnuoChf / 12,
