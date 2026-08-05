@@ -151,11 +151,25 @@ repo; test sui meccanismi in `engine/busta-paga.test.mjs`):
   chiaro/scuro): https://claude.ai/code/artifact/fb0480ca-9042-4e23-b1a3-51f370efbec7
   Smoke test Playwright OK (aliquote R0 8% @71.5k e T0 5% @52k confermate).
 
+## Benchmark concorrenti (2026-08) — vedi docs/benchmark-concorrenti-2026-08.md
+
+A 52k/65k CHF (nuovo front., celibe) il nostro netto differisce di
++1'800–2'400 CHF/anno da frontaliereticino.ch (tabelle interpolate, LPP sul
+lordo intero, niente ulteriore detrazione) e +3'900–4'400 da cambiavalute.ch
+(aliquota piatta 9%×0,8, LPP intera non dimezzata, IRPEF 33% sul 2° scaglione,
+nessun credito d'imposta). Siamo gli unici con le tabelle ufficiali complete.
+
 ## Prossimi passi tecnici
 
-1. Aggiungere altri casi reali di validazione (altre tariffe/anni, buste paga
+1. VERIFICA FISCALE: credito d'imposta pro-quota ex art. 165 c.10 TUIR (per la
+   franchigia il credito andrebbe forse ridotto in proporzione — noi diamo il
+   100%, frontaliereticino riduce; impatto ~1'000-1'400 €/anno). Chiedere a un
+   commercialista; se confermato, correggere motore.mjs.
+2. Aggiungere altri casi reali di validazione (altre tariffe/anni, buste paga
    di colleghi frontalieri disponibili)
-2. Scelta stack definitiva (il motore JS puro spinge verso React Native/Expo)
+3. Feature da pareggiare: addizionali comunali per comune di residenza (dataset
+   ~100 comuni), comparatore LAMal/SSN, assegni familiari
+4. Scelta stack definitiva (il motore JS puro spinge verso React Native/Expo)
    e repo dedicato; integrare `cambio.mjs` con tasso live + alert push
 3. Modellare le detrazioni familiari IRPEF italiane (carichi di famiglia) —
    senza, il vantaggio figli non si vede per i nuovi frontalieri
