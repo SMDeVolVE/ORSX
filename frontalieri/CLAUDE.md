@@ -112,7 +112,9 @@ Imposta alla fonte: aliquote UFFICIALI Canton Ticino edizione 2026 in
 
 Lato Italia (solo nuovi frontalieri):
 - Imponibile = (lordo − contributi CH) × cambio − franchigia €10'000
-- IRPEF a scaglioni 2026 (23% ≤28k, 35% 28–50k, 43% >50k) + addizionali stimate 1,7%
+- IRPEF a scaglioni 2026 (23% ≤28k, 33% 28–50k, 43% >50k; il 2° scaglione è
+  stato tagliato dal 35% al 33% dalla L. Bilancio 2026, beneficio sterilizzato
+  oltre 200k) + addizionali stimate 1,7%
 - Credito d'imposta = imposta alla fonte CH convertita in EUR
 - Saldo Italia = max(IRPEF+add − credito, 0)
 - Detrazioni IRPEF personali NON incluse (semplificazione dichiarata)
@@ -156,8 +158,10 @@ repo; test sui meccanismi in `engine/busta-paga.test.mjs`):
 A 52k/65k CHF (nuovo front., celibe) il nostro netto differisce di
 +1'800–2'400 CHF/anno da frontaliereticino.ch (tabelle interpolate, LPP sul
 lordo intero, niente ulteriore detrazione) e +3'900–4'400 da cambiavalute.ch
-(aliquota piatta 9%×0,8, LPP intera non dimezzata, IRPEF 33% sul 2° scaglione,
-nessun credito d'imposta). Siamo gli unici con le tabelle ufficiali complete.
+(aliquota piatta 9%×0,8, LPP intera non dimezzata, nessun credito d'imposta).
+Siamo gli unici con le tabelle ufficiali complete. Dal benchmark è emerso anche
+un NOSTRO errore poi corretto: il 2° scaglione IRPEF 2026 è al 33%, non 35%
+(L. Bilancio 2026) — cambiavalute l'aveva giusto, frontaliereticino no.
 
 ## Prossimi passi tecnici
 

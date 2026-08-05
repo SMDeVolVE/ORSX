@@ -44,12 +44,12 @@ test("aliquote monotone non decrescenti", () => {
   }
 });
 
-test("IRPEF a scaglioni", () => {
+test("IRPEF a scaglioni 2026 (2° scaglione al 33%, L. Bilancio 2026)", () => {
   assert.equal(irpef(0), 0);
   assert.equal(irpef(-5), 0);
   assert.equal(irpef(28000), 6440);            // 28'000 × 23%
-  assert.equal(irpef(50000), 14140);           // 6'440 + 22'000 × 35%
-  assert.equal(irpef(60000), 18440);           // 14'140 + 10'000 × 43%
+  assert.equal(irpef(50000), 13700);           // 6'440 + 22'000 × 33%
+  assert.equal(irpef(60000), 18000);           // 13'700 + 10'000 × 43%
 });
 
 test("contributi sociali: LPP con salario coordinato", () => {
@@ -78,9 +78,9 @@ test("caso completo: nuovo frontaliere 5'500 × 13, 35–44, cambio 1.06", () =>
   assert.equal(Math.round(r.sociali), 7543);
   // imponibile IT = (71'500 − 7'543) × 1.06 − 10'000 ≈ 57'794.42
   assert.ok(Math.abs(r.imponibileItEur - 57794.42) < 0.5);
-  // IRPEF 17'491.60 + addizionali 982.51 − credito 6'063.20 ≈ saldo 12'410.91
-  assert.ok(Math.abs(r.saldoItaliaEur - 12410.91) < 1);
-  assert.ok(Math.abs(r.nettoAnnuoChf - 46528.6) < 2);
+  // IRPEF 17'051.60 − credito 6'063.20 + addizionali 982.51 ≈ saldo 11'970.91
+  assert.ok(Math.abs(r.saldoItaliaEur - 11970.91) < 1);
+  assert.ok(Math.abs(r.nettoAnnuoChf - 46943.69) < 2);
   assert.ok(r.pressione > 0.3 && r.pressione < 0.4);
 });
 

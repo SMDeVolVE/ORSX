@@ -25,11 +25,15 @@ export const SOCIALI = {
 export const ITALIA = {
   franchigiaEur: 10000,
   addizionali: 0.017,  // addizionali regionale+comunale stimate
+  // Scaglioni 2026: la L. Bilancio 2026 taglia il 2° scaglione dal 35% al 33%
+  // (beneficio max 440 €, "sterilizzato" oltre 200'000 € di reddito complessivo)
   scaglioni: [
     { fino: 28000, aliquota: 0.23 },
-    { fino: 50000, aliquota: 0.35 },
+    { fino: 50000, aliquota: 0.33 },
     { fino: Infinity, aliquota: 0.43 },
   ],
+  sterilizzazioneSoglia: 200000,
+  sterilizzazioneImporto: 440,
 };
 
 // Cerca l'aliquota nella tabella [[redditoMax, aliquota%], ...] ordinata per reddito.
@@ -179,6 +183,8 @@ export function calcolaNetto({ lordoMensile, mensilita, bandaLpp, regime, cambio
         detrazioneFigli(imponibileItEur, figliMaggiorenni);
     }
     irpefNettaEur = Math.max(irpefLordaEur - detrazioniEur, 0);
+    // sterilizzazione del taglio 35→33% oltre 200k (riduzione delle detrazioni per oneri)
+    if (imponibileItEur > ITALIA.sterilizzazioneSoglia) irpefNettaEur += ITALIA.sterilizzazioneImporto;
     addizionaliEur = imponibileItEur * ITALIA.addizionali;
     creditoEur = fonte * cambio;
     // il credito per le imposte estere abbatte l'IRPEF netta; le addizionali restano dovute

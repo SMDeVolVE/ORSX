@@ -14,9 +14,9 @@ dai loro siti (non via UI), portato 1:1 in `scratchpad` e confrontato.
 |--------------------|-----------:|---------------------:|----------------:|
 | Contributi CH      | 5'125      | 6'708                | 9'048           |
 | Imposta fonte      | 2'964 (5,7%) | 2'704 (5,20%)      | 3'093 (~5,95% eff.) |
-| Saldo Italia (EUR) | 7'351      | 7'869                | 7'743           |
-| **Netto annuo CHF**| **37'041** | 35'233               | 32'623          |
-| Pressione          | 28,8%      | 32,2%                | 37,3%           |
+| Saldo Italia (EUR) | 7'108      | 7'869                | 7'743           |
+| **Netto annuo CHF**| **37'268** | 35'233               | 32'623          |
+| Pressione          | 28,3%      | 32,2%                | 37,3%           |
 
 ### 65'000 CHF annui
 
@@ -24,12 +24,15 @@ dai loro siti (non via UI), portato 1:1 in `scratchpad` e confrontato.
 |--------------------|-----------:|---------------------:|----------------:|
 | Contributi CH      | 6'737      | 8'385                | 11'310          |
 | Imposta fonte      | 4'745 (7,3%) | 4'784 (7,36%)      | 3'866           |
-| Saldo Italia (EUR) | 10'959     | 11'678               | 11'262          |
-| **Netto annuo CHF**| **43'276** | 40'917               | 39'299          |
-| Pressione          | 33,4%      | 37,1%                | 39,5%           |
+| Saldo Italia (EUR) | 10'519     | 11'678               | 11'262          |
+| **Netto annuo CHF**| **43'687** | 40'917               | 39'299          |
+| Pressione          | 32,8%      | 37,1%                | 39,5%           |
 
-Scarto sul netto annuo: **1'800–2'400 CHF** vs frontaliereticino,
-**3'900–4'400 CHF** vs cambiavalute.
+Scarto sul netto annuo: **2'000–2'800 CHF** vs frontaliereticino,
+**4'400–4'600 CHF** vs cambiavalute.
+
+*Nota: valori ricalcolati dopo l'aggiornamento del nostro motore agli scaglioni
+IRPEF 2026 (2° scaglione al 33%, L. Bilancio 2026).*
 
 ## Come calcolano loro (dal loro codice)
 
@@ -48,6 +51,8 @@ Scarto sul netto annuo: **1'800–2'400 CHF** vs frontaliereticino,
 - Detrazione lavoro dipendente art. 13 identica alla nostra, ma **manca
   l'ulteriore detrazione LdB 2025** (fino a 1'000 €). Figli: 950 € flat per
   TUTTI i figli (ufficiale: solo 21+, quota decrescente col reddito).
+- **IRPEF con 2° scaglione ancora al 35%**: non aggiornato al taglio al 33%
+  della L. Bilancio 2026 (~440 € in più di IRPEF stimata).
 - **Credito d'imposta pro-quota** (`credito × imponibile/lordo`) e applicato
   anche alle addizionali. Vedi "questione aperta" sotto.
 - Punti di forza: addizionali comunali per singolo comune di residenza,
@@ -61,7 +66,8 @@ Scarto sul netto annuo: **1'800–2'400 CHF** vs frontaliereticino,
 - **LPP: aliquota di fascia INTERA (7/10/15/18%) sul lordo pieno** — addebita
   al dipendente anche la metà del datore, senza coordinato → a 52k sono
   5'200 CHF/anno di sola LPP (realistico: ~1'300).
-- **Secondo scaglione IRPEF al 33%** (dal 2024 è 35%).
+- Secondo scaglione IRPEF al 33%: CORRETTO per il 2026 (L. Bilancio 2026) —
+  su questo punto erano più aggiornati di noi e di frontaliereticino.
 - **Nessun credito d'imposta svizzero**: l'imposta alla fonte viene dedotta
   dalla base imponibile invece che accreditata (metodo non conforme alla
   convenzione). Nessuna detrazione, nessuna addizionale.
