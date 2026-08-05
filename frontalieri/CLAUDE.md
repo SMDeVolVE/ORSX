@@ -89,6 +89,11 @@ quando si sceglie lo stack definitivo.
   d'imposta); il beneficio pieno si vede solo per i vecchi frontalieri. Le
   detrazioni familiari ITALIANE non sono ancora modellate — quando lo saranno,
   il vantaggio tornerà visibile anche per i nuovi.
+- `engine/cambio.mjs` verificato LIVE (2026-08-05: 1 CHF = 1,0731 EUR):
+  frankfurter è migrato su api.frankfurter.dev (il vecchio .app risponde 301) e
+  exchangerate.host ora vuole una API key → fallback sostituito con
+  open.er-api.com (gratuito, senza chiave). Il default 1,06 del prototipo è
+  da alzare (~1,07) o meglio collegare al tasso live.
 
 ### Logica di calcolo implementata (in `engine/motore.mjs`)
 
