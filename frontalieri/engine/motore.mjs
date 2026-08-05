@@ -100,18 +100,39 @@ export function detrazioneFigli(reddito, figliMaggiorenni) {
   return quota > 0 ? 950 * figliMaggiorenni * quota : 0;
 }
 
-// IRPEF a scaglioni sull'imponibile in EUR (lorda, prima delle detrazioni).
-export function irpef(imponibile) {
+// Calcolo progressivo generico su scaglioni [{fino, aliquota}, ...].
+export function imposteAScaglioni(imponibile, scaglioni) {
   if (imponibile <= 0) return 0;
   let tax = 0;
   let prev = 0;
-  for (const { fino, aliquota } of ITALIA.scaglioni) {
+  for (const { fino, aliquota } of scaglioni) {
     tax += (Math.min(imponibile, fino) - prev) * aliquota;
     if (imponibile <= fino) break;
     prev = fino;
   }
   return tax;
 }
+
+// IRPEF a scaglioni sull'imponibile in EUR (lorda, prima delle detrazioni).
+export function irpef(imponibile) {
+  return imposteAScaglioni(imponibile, ITALIA.scaglioni);
+}
+
+// Addizionale regionale Lombardia (a scaglioni, 2026).
+export const ADDIZIONALE_LOMBARDIA = [
+  { fino: 15000, aliquota: 0.0123 },
+  { fino: 28000, aliquota: 0.0158 },
+  { fino: 50000, aliquota: 0.0172 },
+  { fino: Infinity, aliquota: 0.0173 },
+];
+
+// Esempio di addizionale comunale a scaglioni: Appiano Gentile (CO),
+// delibera n. 40 del 22/12/2025. Nell'app: dataset per comune di residenza.
+export const ADDIZIONALE_APPIANO_GENTILE = [
+  { fino: 28000, aliquota: 0.0027 },
+  { fino: 50000, aliquota: 0.006 },
+  { fino: Infinity, aliquota: 0.008 },
+];
 
 // Contributi sociali CH quota dipendente sul lordo annuo.
 // bandaLpp: indice in LPP_BANDS (fascia d'età).
@@ -150,8 +171,11 @@ export function contributiSociali(lordoAnnuo, bandaLpp, opts = {}) {
  * @param {boolean} [p.detrazioni] applica le detrazioni IRPEF (default true)
  * @param {boolean} [p.coniugeACarico]    coniuge fiscalmente a carico (reddito ≤ 2'840,51 €)
  * @param {number}  [p.figliMaggiorenni]  figli 21+ a carico (per la detrazione IT)
+ * @param {object[]} [p.addizionaleRegionale]  scaglioni [{fino, aliquota}] (es. ADDIZIONALE_LOMBARDIA);
+ *                                             se forniti sostituiscono la stima flat 1,7%
+ * @param {object[]} [p.addizionaleComunale]   scaglioni del comune di residenza
  */
-export function calcolaNetto({ lordoMensile, mensilita, bandaLpp, regime, cambio, tabelle, dati, famiglia = "celibe", figli = 0, tassoAinp, altrePct, lppMensile, detrazioni = true, coniugeACarico = false, figliMaggiorenni = 0 }) {
+export function calcolaNetto({ lordoMensile, mensilita, bandaLpp, regime, cambio, tabelle, dati, famiglia = "celibe", figli = 0, tassoAinp, altrePct, lppMensile, detrazioni = true, coniugeACarico = false, figliMaggiorenni = 0, addizionaleRegionale, addizionaleComunale }) {
   const lordoAnnuo = lordoMensile * mensilita;
 
   const sociali = contributiSociali(lordoAnnuo, bandaLpp, {
@@ -185,7 +209,10 @@ export function calcolaNetto({ lordoMensile, mensilita, bandaLpp, regime, cambio
     irpefNettaEur = Math.max(irpefLordaEur - detrazioniEur, 0);
     // sterilizzazione del taglio 35→33% oltre 200k (riduzione delle detrazioni per oneri)
     if (imponibileItEur > ITALIA.sterilizzazioneSoglia) irpefNettaEur += ITALIA.sterilizzazioneImporto;
-    addizionaliEur = imponibileItEur * ITALIA.addizionali;
+    addizionaliEur = (addizionaleRegionale || addizionaleComunale)
+      ? imposteAScaglioni(imponibileItEur, addizionaleRegionale ?? []) +
+        imposteAScaglioni(imponibileItEur, addizionaleComunale ?? [])
+      : imponibileItEur * ITALIA.addizionali;
     creditoEur = fonte * cambio;
     // il credito per le imposte estere abbatte l'IRPEF netta; le addizionali restano dovute
     saldoItaliaEur = Math.max(irpefNettaEur - creditoEur, 0) + addizionaliEur;
