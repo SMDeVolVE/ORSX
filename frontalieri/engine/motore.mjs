@@ -58,7 +58,45 @@ export function scegliTabella(dati, { regime, famiglia = "celibe", figli = 0 }) 
   return { lettera, figli: f, tabella: dati[lettera][String(f)] };
 }
 
-// IRPEF a scaglioni sull'imponibile in EUR (senza detrazioni personali).
+// ── Detrazioni IRPEF (valori 2025/26, semplificazioni dichiarate) ──────────
+// Non modellati: trattamento integrativo/bonus per redditi ≤20k (raro per
+// salari CH), micro-maggiorazioni della detrazione coniuge (10-30 €),
+// detrazioni per oneri (mutui, sanità, ...).
+
+// Detrazione per redditi di lavoro dipendente (art. 13 TUIR).
+export function detrazioneLavoroDipendente(reddito) {
+  if (reddito <= 0) return 0;
+  if (reddito <= 15000) return 1955;
+  if (reddito <= 28000) return 1910 + (1190 * (28000 - reddito)) / 13000;
+  if (reddito <= 50000) return (1910 * (50000 - reddito)) / 22000;
+  return 0;
+}
+
+// Ulteriore detrazione lavoro dipendente (L. Bilancio 2025, strutturale).
+export function ulterioreDetrazione(reddito) {
+  if (reddito > 20000 && reddito <= 32000) return 1000;
+  if (reddito > 32000 && reddito < 40000) return (1000 * (40000 - reddito)) / 8000;
+  return 0;
+}
+
+// Coniuge a carico (reddito proprio del coniuge ≤ 2'840,51 €).
+export function detrazioneConiuge(reddito) {
+  if (reddito <= 0) return 0;
+  if (reddito <= 15000) return 800 - (110 * reddito) / 15000;
+  if (reddito <= 40000) return 690;
+  if (reddito < 80000) return (690 * (80000 - reddito)) / 40000;
+  return 0;
+}
+
+// Figli a carico di 21+ anni (sotto i 21 c'è l'assegno unico, non la detrazione).
+export function detrazioneFigli(reddito, figliMaggiorenni) {
+  if (figliMaggiorenni <= 0) return 0;
+  const teorico = 95000 + (figliMaggiorenni - 1) * 15000;
+  const quota = (teorico - reddito) / teorico;
+  return quota > 0 ? 950 * figliMaggiorenni * quota : 0;
+}
+
+// IRPEF a scaglioni sull'imponibile in EUR (lorda, prima delle detrazioni).
 export function irpef(imponibile) {
   if (imponibile <= 0) return 0;
   let tax = 0;
@@ -105,8 +143,11 @@ export function contributiSociali(lordoAnnuo, bandaLpp, opts = {}) {
  * @param {number} [p.altrePct]    altre trattenute % aziendali/CCL (IGM, CCL, ...)
  * @param {number} [p.lppMensile]  LPP mensile reale da busta paga (12 prelievi/anno;
  *                                 di norma la tredicesima non è soggetta a LPP)
+ * @param {boolean} [p.detrazioni] applica le detrazioni IRPEF (default true)
+ * @param {boolean} [p.coniugeACarico]    coniuge fiscalmente a carico (reddito ≤ 2'840,51 €)
+ * @param {number}  [p.figliMaggiorenni]  figli 21+ a carico (per la detrazione IT)
  */
-export function calcolaNetto({ lordoMensile, mensilita, bandaLpp, regime, cambio, tabelle, dati, famiglia = "celibe", figli = 0, tassoAinp, altrePct, lppMensile }) {
+export function calcolaNetto({ lordoMensile, mensilita, bandaLpp, regime, cambio, tabelle, dati, famiglia = "celibe", figli = 0, tassoAinp, altrePct, lppMensile, detrazioni = true, coniugeACarico = false, figliMaggiorenni = 0 }) {
   const lordoAnnuo = lordoMensile * mensilita;
 
   const sociali = contributiSociali(lordoAnnuo, bandaLpp, {
@@ -126,11 +167,22 @@ export function calcolaNetto({ lordoMensile, mensilita, bandaLpp, regime, cambio
   const fonte = lordoAnnuo * (aliquota / 100);
 
   let saldoItaliaEur = 0, imponibileItEur = 0, irpefLordaEur = 0, creditoEur = 0;
+  let detrazioniEur = 0, irpefNettaEur = 0, addizionaliEur = 0;
   if (regime === "nuovo") {
     imponibileItEur = Math.max((lordoAnnuo - sociali.totale) * cambio - ITALIA.franchigiaEur, 0);
-    irpefLordaEur = irpef(imponibileItEur) + imponibileItEur * ITALIA.addizionali;
+    irpefLordaEur = irpef(imponibileItEur);
+    if (detrazioni) {
+      detrazioniEur =
+        detrazioneLavoroDipendente(imponibileItEur) +
+        ulterioreDetrazione(imponibileItEur) +
+        (coniugeACarico ? detrazioneConiuge(imponibileItEur) : 0) +
+        detrazioneFigli(imponibileItEur, figliMaggiorenni);
+    }
+    irpefNettaEur = Math.max(irpefLordaEur - detrazioniEur, 0);
+    addizionaliEur = imponibileItEur * ITALIA.addizionali;
     creditoEur = fonte * cambio;
-    saldoItaliaEur = Math.max(irpefLordaEur - creditoEur, 0);
+    // il credito per le imposte estere abbatte l'IRPEF netta; le addizionali restano dovute
+    saldoItaliaEur = Math.max(irpefNettaEur - creditoEur, 0) + addizionaliEur;
   }
 
   const nettoAnnuoChf = lordoAnnuo - sociali.totale - fonte - saldoItaliaEur / cambio;
@@ -140,7 +192,7 @@ export function calcolaNetto({ lordoMensile, mensilita, bandaLpp, regime, cambio
     ...sociali,
     sociali: sociali.totale,
     lettera, aliquota, fonte,
-    imponibileItEur, irpefLordaEur, creditoEur, saldoItaliaEur,
+    imponibileItEur, irpefLordaEur, detrazioniEur, irpefNettaEur, addizionaliEur, creditoEur, saldoItaliaEur,
     nettoAnnuoChf,
     nettoMensileChf: nettoAnnuoChf / 12,
     nettoMensileEur: (nettoAnnuoChf / 12) * cambio,
