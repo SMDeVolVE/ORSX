@@ -136,13 +136,27 @@ repo; test sui meccanismi in `engine/busta-paga.test.mjs`):
 - Le spese/rimborsi in busta NON sono soggetti a contributi né a fonte: la UI
   deve chiedere il salario soggetto, non il totale lordo del cedolino.
 
+## Detrazioni IRPEF (aggiunte al motore) e prototipo v3 — FATTI
+
+- Detrazioni modellate in `motore.mjs`: lavoro dipendente (art. 13 TUIR),
+  ulteriore detrazione LdB 2025 (finestra 20-40k), coniuge a carico, figli 21+
+  (sotto i 21 c'è l'assegno unico). Il credito d'imposta estero abbatte l'IRPEF
+  netta; le addizionali restano dovute. NON modellati: trattamento integrativo
+  ≤20k, micro-maggiorazioni coniuge, detrazioni per oneri.
+- Prototipo v3 (`prototipo/calcolatore-netto-frontaliere.jsx`): importa motore
+  e JSON completo, selettore famiglia (4 tariffe) + figli, sezione "da busta
+  paga" (LPP fisso, altre trattenute %, coniuge/figli 21+ lato IT).
+- Versione interattiva pubblicata come Claude artifact (HTML standalone con
+  motore portato in vanilla JS + tutte le tabelle inline, ~356 KB, tema
+  chiaro/scuro): https://claude.ai/code/artifact/fb0480ca-9042-4e23-b1a3-51f370efbec7
+  Smoke test Playwright OK (aliquote R0 8% @71.5k e T0 5% @52k confermate).
+
 ## Prossimi passi tecnici
 
 1. Aggiungere altri casi reali di validazione (altre tariffe/anni, buste paga
    di colleghi frontalieri disponibili)
-2. Aggiornare il prototipo JSX con selettore famiglia + figli (il motore è
-   pronto; manca solo la UI) + campi opzionali "da busta paga" (LPP fisso,
-   IGM/CCL, salario soggetto vs spese)
+2. Scelta stack definitiva (il motore JS puro spinge verso React Native/Expo)
+   e repo dedicato; integrare `cambio.mjs` con tasso live + alert push
 3. Modellare le detrazioni familiari IRPEF italiane (carichi di famiglia) —
    senza, il vantaggio figli non si vede per i nuovi frontalieri
 4. Integrare `engine/cambio.mjs` nel prototipo (tasso live) + notifiche push
